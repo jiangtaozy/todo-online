@@ -9,16 +9,64 @@ import (
   "github.com/justinas/alice"
   "github.com/gorilla/context"
   "github.com/julienschmidt/httprouter"
+  "gopkg.in/mgo.v2"
+  "gopkg.in/mgo.v2/bson"
 )
 
 func main() {
+  session, err := mgo.Dial("localhost")
+  if err != nil {
+    panic(err)
+  }
+  defer session.Close()
+  session.SetMode(mgo.Monotonic, true)
+  appC := appContext{session.DB("test")}
   commonHandlers := alice.New(context.ClearHandler, loggingHandler)
-  router := httprouter.New()
-  router.GET("/", wrapHandler(commonHandlers.ThenFunc(indexHandler)))
-  router.GET("/about", wrapHandler(commonHandlers.ThenFunc(aboutHandler)))
-  router.GET("/admin", wrapHandler(commonHandlers.Append(authHandler).ThenFunc(adminHandler)))
-  router.GET("/teas/:id", wrapHandler(commonHandlers.ThenFunc(teaHandler)))
+  router := NewRouter()
+  router.Get("/", commonHandlers.ThenFunc(indexHandler))
+  router.Get("/about", commonHandlers.ThenFunc(aboutHandler))
+  router.Get("/admin", commonHandlers.Append(authHandler).ThenFunc(adminHandler))
+  router.Get("/teas/:id", commonHandlers.ThenFunc(appC.teaHandler))
   http.ListenAndServe(":8080", router)
+}
+
+type appContext struct {
+  db *mgo.Database
+}
+
+type Tea struct {
+  Id bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
+  Name string `json:"name"`
+  Category string `json:"category"`
+}
+
+type TeaResource struct {
+  Data Tea `json:"data"`
+}
+
+type TeaRepo struct {
+  coll *mgo.Collection
+}
+
+type router struct {
+  *httprouter.Router
+}
+
+func (r *router) Get(path string, handler http.Handler) {
+  r.GET(path, wrapHandler(handler))
+}
+
+func NewRouter() *router{
+  return &router{httprouter.New()}
+}
+
+func (r *TeaRepo) Find(id string) (TeaResource, error) {
+  result := TeaResource{}
+  err := r.coll.FindId(bson.ObjectIdHex(id)).One(&result.Data)
+  if err != nil {
+    return result, err
+  }
+  return result, nil
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -34,10 +82,15 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
   json.NewEncoder(w).Encode(user)
 }
 
-func teaHandler(w http.ResponseWriter, r *http.Request) {
+func (c *appContext) teaHandler(w http.ResponseWriter, r *http.Request) {
   params := context.Get(r, "params").(httprouter.Params)
-  id := params.ByName("id")
-  json.NewEncoder(w).Encode(id)
+  repo := TeaRepo{c.db.C("test")}
+  tea, err := repo.Find(params.ByName("id"))
+  if err != nil {
+    panic(err)
+  }
+  w.Header().Set("Content-Type", "application/vnd.api+json")
+  json.NewEncoder(w).Encode(tea)
 }
 
 func loggingHandler(next http.Handler) http.Handler {
