@@ -2,11 +2,13 @@ import {
   GET_TODOS,
 } from '../actions'
 import { CREATE_TODO } from '../actions/createTodo'
+import { UPDATE_TODO } from '../actions/updateTodo'
 
 const todos = (
   state = {
     isGetting: false,
     isCreating: false,
+    isUpdating: false,
     items: [],
   },
   action
@@ -53,13 +55,27 @@ const todos = (
           isGetting: false,
         }
       }
-    case 'TOGGLE_TODO':
-      return {
-        items: state.items.map(todo =>
-          (todo.id === action.id)
-            ? {...todo, completed: !todo.completed}
-            : todo
-        )
+    case UPDATE_TODO:
+      if(!action.status) {
+	return {
+	  ...state,
+	  isUpdating: true,
+	}
+      } else if(action.status === 'success') {
+	return {
+	  ...state,
+	  isUpdating: false,
+	  items: state.items.map(todo =>
+	    (todo.id === action.response.id)
+	    ? action.response : todo
+	  ),
+	}
+      } else {
+        console.log('error: ', action.error)
+	return {
+	  ...state,
+	  isUpdating: false,
+	}
       }
     default:
       return state

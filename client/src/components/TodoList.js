@@ -13,7 +13,14 @@ class TodoList extends Component {
     return (
       <ul>
         {todos.items.map((todo, index) => (
-          <Todo key={index} {...todo} onClick={() => onTodoClick(index)} />
+          <Todo key={index} {...todo}
+	    onClick={() => {
+	      onTodoClick({
+		...todo,
+		completed: !todo.completed,
+	      })
+	    }}
+	  />
         ))}
       </ul>
     )
@@ -22,7 +29,6 @@ class TodoList extends Component {
 
 TodoList.propTypes = {
   todos: PropTypes.shape({
-    isGetting: PropTypes.bool.isRequired,
     items: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
