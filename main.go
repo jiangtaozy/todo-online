@@ -283,6 +283,7 @@ func main() {
   router.Delete("/todos/:id", commonHandlers.ThenFunc(appC.deleteTodoHandler))
   router.Get("/todos", commonHandlers.ThenFunc(appC.todosHandler))
   router.Post("/todos", commonHandlers.Append(bodyHandler(TodoResource{})).ThenFunc(appC.createTodoHandler))
+  router.NotFound = http.FileServer(http.Dir("client/build"))
   log.Println("listen at 1027")
   http.ListenAndServe(":1027", router)
 }
