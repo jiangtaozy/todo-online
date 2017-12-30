@@ -12,16 +12,20 @@ class TodoList extends Component {
     let { todos, onTodoClick } = this.props
     return (
       <ul>
-        {todos.items.map((todo, index) => (
-          <Todo key={index} {...todo}
-	    onClick={() => {
-	      onTodoClick({
-		...todo,
-		completed: !todo.completed,
-	      })
-	    }}
-	  />
-        ))}
+        {todos.items.map((todo, index) => {
+          return (
+            <Todo
+              key={index}
+              {...todo}
+		          onClick={() => {
+		            onTodoClick({
+				          ...todo,
+				          completed: !todo.completed,
+	              })
+	            }}
+	          />
+          )
+        })}
       </ul>
     )
   }

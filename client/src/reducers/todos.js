@@ -42,7 +42,7 @@ const todos = (
       } else if(action.status === 'success') {
         return {
           ...state,
-          isGetting: false,
+          isCreating: false,
           items: [
             ...state.items,
             action.response,
@@ -52,7 +52,7 @@ const todos = (
         console.log('error: ', action.error)
         return {
           ...state,
-          isGetting: false,
+          isCreating: false,
         }
       }
     case UPDATE_TODO:

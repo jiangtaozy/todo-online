@@ -22,6 +22,7 @@ type Todo struct {
   // to customize the encoded JSON key names.
   Text string `json:"text"`
   Completed bool `json:"completed"`
+  CreateAt time.Time `json:"create_at"`
 }
 
 type TodoCollection struct {
@@ -194,6 +195,7 @@ func (c *appContext) todoHandler(w http.ResponseWriter, r *http.Request) {
 
 func (c *appContext) createTodoHandler(w http.ResponseWriter, r *http.Request) {
   body := context.Get(r, "body").(*TodoResource)
+  body.Data.CreateAt = time.Now()
   repository := TodoRepository{c.db.C("todo")}
   err := repository.Create(&body.Data)
   if err != nil {
